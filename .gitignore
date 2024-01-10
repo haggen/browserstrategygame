@@ -1,1 +1,14 @@
+# ruff cache directory.
 .ruff_cache
+
+# Local virtual environment.
+.venv
+
+# Local environment config.
+.env
+
+# Python cache.
+__pycache__
+
+# Local database files.
+*.db
