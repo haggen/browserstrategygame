@@ -1,28 +1,17 @@
 import uvicorn
-from . import config
+
 from fastapi import FastAPI
-from sqlmodel import select
-from .database import DatabaseDep, migrate
-from .database.player import Player
+
+from . import config
+from .api import v1
+from .database import migrate
 
 app = FastAPI()
 
 migrate()
 
 
-@app.get("/players")
-def search_players(db: DatabaseDep) -> list[Player]:
-    query = select(Player)
-    result = db.exec(query)
-    return result.all()
-
-
-@app.post("/players")
-def create_player(player: Player, db: DatabaseDep) -> Player:
-    db.add(player)
-    db.commit()
-    db.refresh(player)
-    return player
+app.include_router(v1.router)
 
 
 def main():
