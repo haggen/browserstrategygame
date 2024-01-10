@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "browserstrategygame"
+version = "0.1.0"
+description = ""
+authors = [
+    "Arthur <arthur@corenzan.com>",
+    "Douglas",
+]
+license = "Apache-2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.108.0"
+sqlmodel = "^0.0.14"
+uvicorn = "^0.25.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.1.11"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
