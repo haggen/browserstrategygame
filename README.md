@@ -21,6 +21,7 @@ python -m venv .venv
 source .venv/bin/activate
 poetry env use python
 poetry install
+poetry run pre-commit install
 ```
 
 Start the application:
