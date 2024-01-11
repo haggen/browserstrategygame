@@ -14,7 +14,7 @@
 
 ### Getting started
 
-Create virtual environment and install dependencies:
+Create a virtual environment and install dependencies:
 
 ```shell
 python -m venv .venv
@@ -36,11 +36,11 @@ Add debug configuration:
 
 ```json
 {
-    "name": "Python Debugger: Remote Attach",
-    "type": "debugpy",
-    "request": "attach",
-    "connect": { "host": "localhost", "port": 5678 },
-    "pathMappings": [{ "localRoot": "${workspaceFolder}", "remoteRoot": "." }]
+  "name": "Python Debugger: Remote Attach",
+  "type": "debugpy",
+  "request": "attach",
+  "connect": { "host": "localhost", "port": 5678 },
+  "pathMappings": [{ "localRoot": "${workspaceFolder}", "remoteRoot": "." }]
 }
 ```
 
