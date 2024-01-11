@@ -30,6 +30,28 @@ Start the application:
 poetry run start
 ```
 
+### Debugging with VSCode
+
+Add debug configuration:
+
+```json
+{
+    "name": "Python Debugger: Remote Attach",
+    "type": "debugpy",
+    "request": "attach",
+    "connect": { "host": "localhost", "port": 5678 },
+    "pathMappings": [{ "localRoot": "${workspaceFolder}", "remoteRoot": "." }]
+}
+```
+
+Start with debug:
+
+> 💡 Debug mode defaults to on during development.
+
+```shell
+DEBUG=1 poetry run start
+```
+
 ## License
 
 Apache-2.0 ©️ 2024 Arthur Corenzan, Douglas Barbosa, etc.
