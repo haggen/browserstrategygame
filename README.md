@@ -19,18 +19,23 @@ Create a virtual environment and install dependencies:
 ```shell
 python -m venv .venv
 source .venv/bin/activate
-poetry env use python
+poetry shell
 poetry install
-poetry run pre-commit install
 ```
 
-Start the application:
+Then, assuming you're still in the virtual environment, configure pre-commit:
 
 ```shell
-poetry run start
+pre-commit install
 ```
 
-### Debugging with VSCode
+Finally, start the application with the debugger:
+
+```shell
+python -m debugpy -l 5678 -m src
+```
+
+### VSCode
 
 Add debug configuration:
 
@@ -42,14 +47,6 @@ Add debug configuration:
   "connect": { "host": "localhost", "port": 5678 },
   "pathMappings": [{ "localRoot": "${workspaceFolder}", "remoteRoot": "." }]
 }
-```
-
-Start with debug:
-
-> 💡 Debug mode defaults to on during development.
-
-```shell
-DEBUG=1 poetry run start
 ```
 
 ## License

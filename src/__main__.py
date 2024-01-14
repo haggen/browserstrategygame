@@ -13,6 +13,8 @@ app = FastAPI(
 )
 app.include_router(api.v1)
 
+database.migrate()
+
 
 @app.exception_handler(ValidationError)
 def handle_validation_error(req: Request, exception: ValidationError):
@@ -29,8 +31,9 @@ def handle_no_result_found(req: Request, exception: NoResultFound):
 
 
 def main():
-    database.migrate()
-    uvicorn.run("src.main:app", host="0.0.0.0", port=config.port, reload=config.debug)
+    uvicorn.run(
+        "src.__main__:app", host="0.0.0.0", port=config.port, reload=config.debug
+    )
 
 
 if __name__ == "__main__":
