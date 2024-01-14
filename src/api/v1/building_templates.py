@@ -4,7 +4,10 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlmodel import select
 
-from ...database import BuildingTemplate, DatabaseDep, not_deleted
+from ...database import (
+    BuildingTemplate,
+    DatabaseDep,
+)
 
 router = APIRouter(
     prefix="/building-templates",
@@ -12,9 +15,9 @@ router = APIRouter(
 )
 
 
-@router.get("/")
+@router.get("")
 def search_building_templates(db: DatabaseDep) -> list[BuildingTemplate]:
-    query = select(BuildingTemplate).where(not_deleted(BuildingTemplate))
+    query = select(BuildingTemplate).where(BuildingTemplate.not_deleted())
     return db.exec(query).all()
 
 
@@ -22,7 +25,7 @@ class BlankBuildingTemplate(BaseModel):
     name: str
 
 
-@router.post("/", status_code=HTTPStatus.CREATED)
+@router.post("", status_code=HTTPStatus.CREATED)
 def create_building_template(
     data: BlankBuildingTemplate, db: DatabaseDep
 ) -> BuildingTemplate:
@@ -36,7 +39,7 @@ def create_building_template(
 @router.get("/{id}")
 def get_building_template(id: int, db: DatabaseDep) -> BuildingTemplate:
     query = select(BuildingTemplate).where(
-        not_deleted(BuildingTemplate), BuildingTemplate.id == id
+        BuildingTemplate.not_deleted(), BuildingTemplate.id == id
     )
     building_template = db.exec(query).one()
     return building_template
@@ -51,7 +54,7 @@ def patch_building_template(
     id: int, data: BuildingTemplatePatch, db: DatabaseDep
 ) -> BuildingTemplate:
     query = select(BuildingTemplate).where(
-        not_deleted(BuildingTemplate), BuildingTemplate.id == id
+        BuildingTemplate.not_deleted(), BuildingTemplate.id == id
     )
     building_template = db.exec(query).one()
     building_template.name = data.name
@@ -65,7 +68,7 @@ def patch_building_template(
 @router.delete("/{id}")
 def delete_building_template(id: int, db: DatabaseDep) -> BuildingTemplate:
     query = select(BuildingTemplate).where(
-        not_deleted(BuildingTemplate), BuildingTemplate.id == id
+        BuildingTemplate.not_deleted(), BuildingTemplate.id == id
     )
     building_template = db.exec(query).one()
     building_template.delete()
