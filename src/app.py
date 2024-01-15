@@ -6,12 +6,12 @@ from fastapi.responses import Response
 from pydantic import ValidationError
 from sqlalchemy.orm.exc import NoResultFound
 
-from . import api, config, database
+from . import config, database, v1
 
 app = FastAPI(
     title="Browser Strategy Game API",
 )
-app.include_router(api.v1)
+app.include_router(v1.router)
 
 database.migrate()
 
@@ -32,7 +32,10 @@ def handle_no_result_found(req: Request, exception: NoResultFound):
 
 def main():
     uvicorn.run(
-        "src.__main__:app", host="0.0.0.0", port=config.port, reload=config.debug
+        "browserstrategygame.app:app",
+        host="0.0.0.0",
+        port=config.port,
+        reload=config.debug,
     )
 
 

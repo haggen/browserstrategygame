@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlmodel import select
 
-from ...database import (
+from ..database import (
     BuildingTemplate,
     DatabaseDep,
 )

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Response
 from pydantic import BaseModel
 from sqlmodel import select
 
-from ...database import Building, BuildingTemplate, DatabaseDep, Player, Storage
+from ..database import Building, BuildingTemplate, DatabaseDep, Player, Storage
 
 router = APIRouter(
     prefix="/buildings",
@@ -41,9 +41,9 @@ def create_building(data: BlankBuilding, db: DatabaseDep) -> Building:
     db.add(player)
     db.add_all(storage)
 
-    for material_requirement in building_template.material_requirements:
+    for material_cost in building_template.material_costs:
         if not player.pay_stored_material(
-            material_requirement.material_id, material_requirement.quantity
+            material_cost.material_id, material_cost.quantity
         ):
             db.rollback()
             return Response(status_code=HTTPStatus.UNPROCESSABLE_ENTITY)

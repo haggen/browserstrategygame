@@ -21,6 +21,10 @@ SQLModel.__tablename__ = __tablename__
 
 
 class Player(SQLModel, table=True):
+    """
+    A player holds buildings and materials.
+    """
+
     id: Optional[int] = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(
@@ -49,6 +53,10 @@ class Player(SQLModel, table=True):
 
 
 class Material(SQLModel, table=True):
+    """
+    A material is a resource that can be produced, stored, and used to build buildings.
+    """
+
     id: Optional[int] = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(
@@ -67,15 +75,22 @@ class Material(SQLModel, table=True):
 
 
 class Storage(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    player_id: int = Field(default=None, foreign_key="player.id")
-    material_id: int = Field(default=None, foreign_key="material.id")
+    """
+    How much of a material a player has.
+    """
+
+    player_id: int = Field(default=None, foreign_key="player.id", primary_key=True)
+    material_id: int = Field(default=None, foreign_key="material.id", primary_key=True)
     balance: int = 0
     player: "Player" = Relationship(back_populates="storage")
     material: "Material" = Relationship(back_populates="storage")
 
 
 class BuildingTemplate(SQLModel, table=True):
+    """
+    A building template is a blueprint for a building.
+    """
+
     id: Optional[int] = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(
@@ -84,7 +99,7 @@ class BuildingTemplate(SQLModel, table=True):
     deleted_at: Optional[datetime] = None
     name: str
     buildings: "Building" = Relationship(back_populates="building_template")
-    material_requirements: list["MaterialRequirement"] = Relationship(
+    material_costs: list["MaterialCost"] = Relationship(
         back_populates="building_template"
     )
     material_yields: list["MaterialYield"] = Relationship(
@@ -99,7 +114,11 @@ class BuildingTemplate(SQLModel, table=True):
         return cls.deleted_at == None  # noqa: E711
 
 
-class MaterialRequirement(SQLModel, table=True):
+class MaterialCost(SQLModel, table=True):
+    """
+    How much of a material a building costs to build.
+    """
+
     id: Optional[int] = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(
@@ -108,7 +127,7 @@ class MaterialRequirement(SQLModel, table=True):
     deleted_at: Optional[datetime] = None
     building_template_id: int = Field(foreign_key="building_template.id")
     building_template: "BuildingTemplate" = Relationship(
-        back_populates="material_requirements"
+        back_populates="material_costs"
     )
     material_id: int = Field(foreign_key="material.id")
     material: "Material" = Relationship()
@@ -123,6 +142,10 @@ class MaterialRequirement(SQLModel, table=True):
 
 
 class MaterialYield(SQLModel, table=True):
+    """
+    How much of a material a building produces.
+    """
+
     id: Optional[int] = Field(default=None, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(
@@ -146,6 +169,10 @@ class MaterialYield(SQLModel, table=True):
 
 
 class Building(SQLModel, table=True):
+    """
+    A building is a player-owned resource generator.
+    """
+
     id: Optional[int] = Field(default=None, primary_key=True)
     built_at: datetime = Field(default_factory=datetime.utcnow)
     destroyed_at: Optional[datetime] = None
@@ -162,6 +189,18 @@ class Building(SQLModel, table=True):
         self.destroyed_at = datetime.utcnow()
 
 
+class Tick(SQLModel, table=True):
+    """
+    When the game ticks, buildings produce materials, effects are applied, etc.
+    """
+
+    # Seconds between game ticks.
+    LENGTH = 60
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    ticked_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 # -
 # -
 # -
@@ -173,13 +212,45 @@ def migrate():
     """
     Create all tables in the database.
     """
+
     SQLModel.metadata.create_all(engine)
+
+
+def seed():
+    """
+    Seed the database with initial data.
+    """
+
+    with Session(engine) as db:
+        stone = Material(name="Stone")
+        db.add(stone)
+        wood = Material(name="Wood")
+        db.add(wood)
+        iron = Material(name="Iron")
+        db.add(iron)
+
+        quarry = BuildingTemplate(name="Stone Quarry")
+        db.add(quarry)
+        lumberyard = BuildingTemplate(name="Lumberyard")
+        db.add(lumberyard)
+        iron_mine = BuildingTemplate(name="Iron Mine")
+        db.add(iron_mine)
+
+        db.add(MaterialCost(building_template=iron_mine, material=stone, quantity=100))
+        db.add(MaterialCost(building_template=iron_mine, material=wood, quantity=100))
+
+        db.add(MaterialYield(building_template=quarry, material=stone, quantity=100))
+        db.add(MaterialYield(building_template=lumberyard, material=wood, quantity=100))
+        db.add(MaterialYield(building_template=iron_mine, material=iron, quantity=100))
+
+        db.commit()
 
 
 def yield_session():
     """
     FastAPI dependency to inject database session.
     """
+
     with Session(engine) as session:
         yield session
 
