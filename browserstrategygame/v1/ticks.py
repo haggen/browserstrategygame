@@ -39,7 +39,7 @@ def create_tick(db: DatabaseDep):
             select(Tick.ticked_at).order_by(col(Tick.ticked_at).desc()).limit(1)
         ).one()
     except NoResultFound:
-        ticked_at = datetime.utcnow()
+        ticked_at = datetime.utcnow() - timedelta(seconds=Tick.LENGTH)
 
     tick = Tick(ticked_at=ticked_at + timedelta(seconds=Tick.LENGTH))
 
