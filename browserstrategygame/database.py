@@ -1,6 +1,6 @@
 from datetime import datetime
 from re import sub
-from typing import Annotated, Optional, TypeVar
+from typing import Annotated, ClassVar, Optional, TypeVar
 
 from fastapi import Depends
 from pydantic import BaseModel
@@ -8,6 +8,8 @@ from sqlalchemy.orm import declared_attr
 from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
 
 from browserstrategygame import config
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class Model(SQLModel):
@@ -17,8 +19,6 @@ class Model(SQLModel):
         Use snake_case for table names.
         """
         return sub("(?!^)([A-Z]+)", r"_\1", cls.__name__).lower()
-
-    T = TypeVar("T", bound=BaseModel)
 
     def update(self, data: T):
         """
@@ -202,7 +202,7 @@ class Tick(Model, table=True):
     """
 
     # Seconds between game ticks.
-    LENGTH = 60
+    LENGTH: ClassVar[int] = 60
 
     id: Optional[int] = Field(default=None, primary_key=True)
     ticked_at: datetime = Field(default_factory=datetime.utcnow)
@@ -229,6 +229,9 @@ def seed():
     """
 
     with Session(engine) as db:
+        if db.get(Material, 1):
+            return
+
         stone = Material(name="Stone")
         db.add(stone)
         wood = Material(name="Wood")
