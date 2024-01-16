@@ -9,8 +9,7 @@ from . import (
     players,
     realms,
     storage,
-    ticks
-
+    ticks,
 )
 
 router = APIRouter(

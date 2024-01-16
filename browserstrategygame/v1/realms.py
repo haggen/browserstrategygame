@@ -9,6 +9,7 @@ router = APIRouter(
     tags=["Realms"],
 )
 
+
 class BlankRealm(BaseModel):
     name: str
 
@@ -27,6 +28,7 @@ def search_realms(db: DatabaseDep):
     query = select(Realm).where(Realm.not_deleted())
     realms = db.exec(query).all()
     return realms
+
 
 @router.get("/{id}")
 def get_player(id: int, db: DatabaseDep):
