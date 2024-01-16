@@ -14,6 +14,7 @@ app = FastAPI(
 app.include_router(v1.router)
 
 database.migrate()
+database.seed()
 
 
 @app.exception_handler(ValidationError)
