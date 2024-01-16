@@ -8,6 +8,7 @@ from . import (
     materials,
     players,
     storage,
+    ticks,
 )
 
 router = APIRouter(
@@ -21,4 +22,4 @@ router.include_router(material_yields.router)
 router.include_router(materials.router)
 router.include_router(players.router)
 router.include_router(storage.router)
-router.include_router(storage.ticks)
+router.include_router(ticks.router)

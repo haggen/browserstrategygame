@@ -4,7 +4,13 @@ from fastapi import APIRouter, Response
 from pydantic import BaseModel
 from sqlmodel import select
 
-from ..database import Building, BuildingTemplate, DatabaseDep, Player, Storage
+from browserstrategygame.database import (
+    Building,
+    BuildingTemplate,
+    DatabaseDep,
+    Player,
+    Storage,
+)
 
 router = APIRouter(
     prefix="/buildings",
@@ -13,7 +19,7 @@ router = APIRouter(
 
 
 @router.get("")
-def search_buildings(db: DatabaseDep) -> list[Building]:
+def search_buildings(db: DatabaseDep):
     query = select(Building).where(Building.not_destroyed())
     return db.exec(query).all()
 
@@ -24,7 +30,7 @@ class BlankBuilding(BaseModel):
 
 
 @router.post("", status_code=HTTPStatus.CREATED)
-def create_building(data: BlankBuilding, db: DatabaseDep) -> Building:
+def create_building(data: BlankBuilding, db: DatabaseDep):
     building = Building.model_validate(data)
     building_template = db.exec(
         select(BuildingTemplate).where(
@@ -54,14 +60,14 @@ def create_building(data: BlankBuilding, db: DatabaseDep) -> Building:
 
 
 @router.get("/{id}")
-def get_building(id: int, db: DatabaseDep) -> Building:
+def get_building(id: int, db: DatabaseDep):
     query = select(Building).where(Building.not_destroyed(), Building.id == id)
     building = db.exec(query).one()
     return building
 
 
 @router.delete("/{id}")
-def destroy_building(id: int, db: DatabaseDep) -> Building:
+def destroy_building(id: int, db: DatabaseDep):
     query = select(Building).where(Building.not_destroyed(), Building.id == id)
     building = db.exec(query).one()
     building.destroy()

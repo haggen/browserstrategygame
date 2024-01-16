@@ -4,9 +4,15 @@ from http import HTTPStatus
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm.exc import NoResultFound
-from sqlmodel import select
+from sqlmodel import col, select
 
-from ..database import Building, DatabaseDep, MaterialYield, Storage, Tick
+from browserstrategygame.database import (
+    Building,
+    DatabaseDep,
+    MaterialYield,
+    Storage,
+    Tick,
+)
 
 router = APIRouter(
     prefix="/ticks",
@@ -15,22 +21,22 @@ router = APIRouter(
 
 
 @router.get("")
-def search_ticks(db: DatabaseDep) -> list[Tick]:
-    query = select(Tick).order_by(Tick.ticked_at.desc())
+def search_ticks(db: DatabaseDep):
+    query = select(Tick).order_by(col(Tick.ticked_at).desc())
     return db.exec(query).all()
 
 
 @router.get("/{tick_id}")
-def get_tick(tick_id: int, db: DatabaseDep) -> Tick:
+def get_tick(tick_id: int, db: DatabaseDep):
     query = select(Tick).where(Tick.id == tick_id)
     return db.exec(query).one()
 
 
 @router.post("")
-def create_tick(db: DatabaseDep) -> Tick:
+def create_tick(db: DatabaseDep):
     try:
         ticked_at = db.exec(
-            select(Tick.ticked_at).order_by(Tick.ticked_at.desc()).limit(1)
+            select(Tick.ticked_at).order_by(col(Tick.ticked_at).desc()).limit(1)
         ).one()
     except NoResultFound:
         ticked_at = datetime.utcnow()

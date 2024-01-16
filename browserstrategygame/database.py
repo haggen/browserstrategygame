@@ -1,26 +1,34 @@
 from datetime import datetime
 from re import sub
-from typing import Annotated, Optional
+from typing import Annotated, Optional, TypeVar
 
 from fastapi import Depends
+from pydantic import BaseModel
 from sqlalchemy.orm import declared_attr
 from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
 
-from . import config
+from browserstrategygame import config
 
 
-@declared_attr
-def __tablename__(cls) -> str:
-    """
-    Use snake_case for table names.
-    """
-    return sub("(?!^)([A-Z]+)", r"_\1", cls.__name__).lower()
+class Model(SQLModel):
+    @declared_attr
+    def __tablename__(cls):
+        """
+        Use snake_case for table names.
+        """
+        return sub("(?!^)([A-Z]+)", r"_\1", cls.__name__).lower()
+
+    T = TypeVar("T", bound=BaseModel)
+
+    def update(self, data: T):
+        """
+        Update a model with data from a Pydantic model.
+        """
+        for key, value in data.model_dump().items():
+            setattr(self, key, value)
 
 
-SQLModel.__tablename__ = __tablename__
-
-
-class Player(SQLModel, table=True):
+class Player(Model, table=True):
     """
     A player holds buildings and materials.
     """
@@ -52,7 +60,7 @@ class Player(SQLModel, table=True):
         return False
 
 
-class Material(SQLModel, table=True):
+class Material(Model, table=True):
     """
     A material is a resource that can be produced, stored, and used to build buildings.
     """
@@ -64,7 +72,6 @@ class Material(SQLModel, table=True):
     )
     deleted_at: Optional[datetime] = None
     name: str
-    storage: list["Storage"] = Relationship(back_populates="material")
 
     def delete(self):
         self.deleted_at = datetime.utcnow()
@@ -74,7 +81,7 @@ class Material(SQLModel, table=True):
         return cls.deleted_at == None  # noqa: E711
 
 
-class Storage(SQLModel, table=True):
+class Storage(Model, table=True):
     """
     How much of a material a player has.
     """
@@ -83,10 +90,10 @@ class Storage(SQLModel, table=True):
     material_id: int = Field(default=None, foreign_key="material.id", primary_key=True)
     balance: int = 0
     player: "Player" = Relationship(back_populates="storage")
-    material: "Material" = Relationship(back_populates="storage")
+    material: "Material" = Relationship()
 
 
-class BuildingTemplate(SQLModel, table=True):
+class BuildingTemplate(Model, table=True):
     """
     A building template is a blueprint for a building.
     """
@@ -100,7 +107,7 @@ class BuildingTemplate(SQLModel, table=True):
     name: str
     buildings: "Building" = Relationship(back_populates="building_template")
     material_costs: list["MaterialCost"] = Relationship(
-        back_populates="building_template"
+        back_populates="building_template",
     )
     material_yields: list["MaterialYield"] = Relationship(
         back_populates="building_template"
@@ -114,7 +121,7 @@ class BuildingTemplate(SQLModel, table=True):
         return cls.deleted_at == None  # noqa: E711
 
 
-class MaterialCost(SQLModel, table=True):
+class MaterialCost(Model, table=True):
     """
     How much of a material a building costs to build.
     """
@@ -141,7 +148,7 @@ class MaterialCost(SQLModel, table=True):
         return cls.deleted_at == None  # noqa: E711
 
 
-class MaterialYield(SQLModel, table=True):
+class MaterialYield(Model, table=True):
     """
     How much of a material a building produces.
     """
@@ -168,7 +175,7 @@ class MaterialYield(SQLModel, table=True):
         return cls.deleted_at == None  # noqa: E711
 
 
-class Building(SQLModel, table=True):
+class Building(Model, table=True):
     """
     A building is a player-owned resource generator.
     """
@@ -189,7 +196,7 @@ class Building(SQLModel, table=True):
         self.destroyed_at = datetime.utcnow()
 
 
-class Tick(SQLModel, table=True):
+class Tick(Model, table=True):
     """
     When the game ticks, buildings produce materials, effects are applied, etc.
     """

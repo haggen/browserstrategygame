@@ -6,7 +6,7 @@ from fastapi.responses import Response
 from pydantic import ValidationError
 from sqlalchemy.orm.exc import NoResultFound
 
-from . import config, database, v1
+from browserstrategygame import config, database, v1
 
 app = FastAPI(
     title="Browser Strategy Game API",
