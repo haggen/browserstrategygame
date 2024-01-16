@@ -1,10 +1,12 @@
 # Browser Strategy Game
 
-> ...
+> A browser based strategy/MMORPG game, under development. 🚧
 
 ## Development
 
 ### Stack
+
+These are the main packages used to develop this application.
 
 - Python 3.12
 - Poetry
@@ -18,26 +20,25 @@ Create a virtual environment and install dependencies:
 
 ```shell
 python -m venv .venv
-source .venv/bin/activate
-poetry shell
+poetry env use .venv/bin/python
 poetry install
 ```
 
-Then, assuming you're still in the virtual environment, configure pre-commit:
+Then, install pre-commit hooks:
 
 ```shell
-pre-commit install
+poetry run pre-commit install
 ```
 
-Finally, start the application with the debugger:
+Finally, start the application:
 
 ```shell
-python -m debugpy -l 5678 -m src
+poetry run python -m browserstrategygame.app
 ```
 
-### VSCode
+### Debugging
 
-Add debug configuration:
+Add a debug configuration to VSCode:
 
 ```json
 {
@@ -47,6 +48,12 @@ Add debug configuration:
   "connect": { "host": "localhost", "port": 5678 },
   "pathMappings": [{ "localRoot": "${workspaceFolder}", "remoteRoot": "." }]
 }
+```
+
+Start the application with the debugger:
+
+```shell
+poetry run python -m debugpy --listen 5678 -m browserstrategygame.app
 ```
 
 ## License
