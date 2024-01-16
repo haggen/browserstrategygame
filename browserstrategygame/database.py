@@ -28,6 +28,28 @@ class Model(SQLModel):
             setattr(self, key, value)
 
 
+class Realm(Model, table=True):
+    """
+    A realm is a collection of players.
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(
+        default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow}
+    )
+    deleted_at: Optional[datetime] = None
+    name: str
+    players: list["Player"] = Relationship(back_populates="realm")
+
+    def delete(self):
+        self.deleted_at = datetime.utcnow()
+
+    @classmethod
+    def not_deleted(cls):
+        return cls.deleted_at == None  # noqa: E711
+
+
 class Player(Model, table=True):
     """
     A player holds buildings and materials.
@@ -42,6 +64,8 @@ class Player(Model, table=True):
     name: str
     buildings: list["Building"] = Relationship(back_populates="player")
     storage: list["Storage"] = Relationship(back_populates="player")
+    realm_id: int = Field(foreign_key="realm.id")
+    realm: "Realm" = Relationship(back_populates="players")
 
     def delete(self):
         self.deleted_at = datetime.utcnow()
@@ -231,6 +255,8 @@ def seed():
     with Session(engine) as db:
         if db.get(Material, 1):
             return
+
+        db.add(Realm(name="Kingdom of Death"))
 
         stone = Material(name="Stone")
         db.add(stone)

@@ -7,8 +7,10 @@ from . import (
     material_yields,
     materials,
     players,
+    realms,
     storage,
-    ticks,
+    ticks
+
 )
 
 router = APIRouter(
@@ -23,3 +25,4 @@ router.include_router(materials.router)
 router.include_router(players.router)
 router.include_router(storage.router)
 router.include_router(ticks.router)
+router.include_router(realms.router)
