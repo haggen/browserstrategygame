@@ -4,10 +4,9 @@ from typing import Annotated, ClassVar, Optional, TypeVar
 
 from fastapi import Depends
 from pydantic import BaseModel
+from sqlalchemy import Engine
 from sqlalchemy.orm import declared_attr
 from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
-
-from browserstrategygame import config
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -18,12 +17,14 @@ class Model(SQLModel):
         """
         Use snake_case for table names.
         """
+
         return sub("(?!^)([A-Z]+)", r"_\1", cls.__name__).lower()
 
     def update(self, data: T):
         """
         Update a model with data from a Pydantic model.
         """
+
         for key, value in data.model_dump().items():
             setattr(self, key, value)
 
@@ -236,7 +237,16 @@ class Tick(Model, table=True):
 # -
 # -
 
-engine = create_engine(config.database_url, echo=True)
+engine: Engine
+
+
+def connect(database_url: str):
+    """
+    Create database engine.
+    """
+
+    global engine
+    engine = create_engine(database_url, echo=True)
 
 
 def migrate():
@@ -245,6 +255,14 @@ def migrate():
     """
 
     SQLModel.metadata.create_all(engine)
+
+
+def drop():
+    """
+    Drop all tables in the database.
+    """
+
+    SQLModel.metadata.drop_all(engine)
 
 
 def seed():
