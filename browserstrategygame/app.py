@@ -13,9 +13,6 @@ app = FastAPI(
 )
 app.include_router(v1.router)
 
-database.migrate()
-database.seed()
-
 
 @app.exception_handler(ValidationError)
 def handle_validation_error(req: Request, exception: ValidationError):
@@ -32,6 +29,10 @@ def handle_no_result_found(req: Request, exception: NoResultFound):
 
 
 def main():
+    database.connect(config.database_url)
+    database.migrate()
+    database.seed()
+
     uvicorn.run(
         "browserstrategygame.app:app",
         host="0.0.0.0",
