@@ -20,7 +20,7 @@ router = APIRouter(
 
 @router.get("")
 def search_buildings(db: DatabaseDep):
-    query = select(Building).where(Building.not_destroyed())
+    query = select(Building).where(Building.not_deleted)
     return db.exec(query).all()
 
 
@@ -34,19 +34,15 @@ def create_building(data: BlankBuilding, db: DatabaseDep):
     building = Building.model_validate(data)
     building_template = db.exec(
         select(BuildingTemplate).where(
-            BuildingTemplate.not_deleted(),
+            BuildingTemplate.not_deleted,
             BuildingTemplate.id == data.building_template_id,
         )
     ).one()
     player = db.exec(
-        select(Player).where(Player.not_deleted(), Player.id == data.player_id)
+        select(Player).where(Player.not_deleted, Player.id == data.player_id)
     ).one()
-    storage = db.exec(select(Storage).where(Storage.player_id == data.player_id)).all()
-
+    db.exec(select(Storage).where(Storage.player_id == data.player_id)).all()
     db.add(building)
-    db.add(player)
-    db.add_all(storage)
-
     for material_cost in building_template.material_costs:
         if not player.pay_stored_material(
             material_cost.material_id, material_cost.quantity
@@ -61,17 +57,16 @@ def create_building(data: BlankBuilding, db: DatabaseDep):
 
 @router.get("/{id}")
 def get_building(id: int, db: DatabaseDep):
-    query = select(Building).where(Building.not_destroyed(), Building.id == id)
+    query = select(Building).where(Building.not_deleted, Building.id == id)
     building = db.exec(query).one()
     return building
 
 
 @router.delete("/{id}")
-def destroy_building(id: int, db: DatabaseDep):
-    query = select(Building).where(Building.not_destroyed(), Building.id == id)
+def delete_building(id: int, db: DatabaseDep):
+    query = select(Building).where(Building.not_deleted, Building.id == id)
     building = db.exec(query).one()
-    building.destroy()
-    db.add(building)
+    building.delete()
     db.commit()
     db.refresh(building)
     return building

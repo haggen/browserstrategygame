@@ -14,5 +14,5 @@ router = APIRouter(
 
 @router.get("")
 def search_building_templates(db: DatabaseDep):
-    query = select(BuildingTemplate).where(BuildingTemplate.not_deleted())
+    query = select(BuildingTemplate).where(BuildingTemplate.not_deleted)
     return db.exec(query).all()

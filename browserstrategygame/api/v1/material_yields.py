@@ -11,5 +11,5 @@ router = APIRouter(
 
 @router.get("")
 def search_material_yields(db: DatabaseDep):
-    query = select(MaterialYield).where(MaterialYield.not_deleted())
+    query = select(MaterialYield).where(MaterialYield.not_deleted)
     return db.exec(query).all()
