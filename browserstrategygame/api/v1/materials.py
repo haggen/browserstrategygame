@@ -11,12 +11,12 @@ router = APIRouter(
 
 @router.get("")
 def search_materials(db: DatabaseDep):
-    query = select(Material).where(Material.not_deleted())
+    query = select(Material).where(Material.not_deleted)
     return db.exec(query).all()
 
 
 @router.get("/{id}")
 def get_material(id: int, db: DatabaseDep):
-    query = select(Material).where(Material.not_deleted(), Material.id == id)
+    query = select(Material).where(Material.not_deleted, Material.id == id)
     material = db.exec(query).one()
     return material

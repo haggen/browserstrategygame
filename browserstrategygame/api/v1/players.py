@@ -14,12 +14,13 @@ router = APIRouter(
 
 @router.get("")
 def search_players(db: DatabaseDep):
-    query = select(Player).where(Player.not_deleted())
+    query = select(Player).where(Player.not_deleted)
     return db.exec(query).all()
 
 
 class BlankPlayer(BaseModel):
     name: str
+    realm_id: int
 
 
 @router.post("", status_code=HTTPStatus.CREATED)
@@ -33,7 +34,7 @@ def create_player(data: BlankPlayer, db: DatabaseDep):
 
 @router.get("/{id}")
 def get_player(id: int, db: DatabaseDep):
-    query = select(Player).where(Player.not_deleted(), Player.id == id)
+    query = select(Player).where(Player.not_deleted, Player.id == id)
     player = db.exec(query).one()
     return player
 
@@ -44,10 +45,9 @@ class PlayerPatch(BaseModel):
 
 @router.patch("/{id}")
 def patch_player(id: int, data: PlayerPatch, db: DatabaseDep):
-    query = select(Player).where(Player.not_deleted(), Player.id == id)
+    query = select(Player).where(Player.not_deleted, Player.id == id)
     player = db.exec(query).one()
-    player.update(player)
-    db.add(player)
+    player.update(data)
     db.commit()
     db.refresh(player)
     return player
@@ -55,10 +55,9 @@ def patch_player(id: int, data: PlayerPatch, db: DatabaseDep):
 
 @router.delete("/{id}")
 def delete_player(id: int, db: DatabaseDep):
-    query = select(Player).where(Player.not_deleted(), Player.id == id)
+    query = select(Player).where(Player.not_deleted, Player.id == id)
     player = db.exec(query).one()
     player.delete()
-    db.add(player)
     db.commit()
     db.refresh(player)
     return player

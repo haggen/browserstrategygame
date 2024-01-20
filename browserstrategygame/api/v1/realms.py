@@ -25,13 +25,13 @@ def create_realm(data: BlankRealm, db: DatabaseDep):
 
 @router.get("")
 def search_realms(db: DatabaseDep):
-    query = select(Realm).where(Realm.not_deleted())
+    query = select(Realm).where(Realm.not_deleted)
     realms = db.exec(query).all()
     return realms
 
 
 @router.get("/{id}")
 def get_player(id: int, db: DatabaseDep):
-    query = select(Realm).where(Realm.not_deleted(), Realm.id == id)
+    query = select(Realm).where(Realm.not_deleted, Realm.id == id)
     realm = db.exec(query).one()
     return realm

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from http import HTTPStatus
 
 from fastapi import APIRouter
@@ -22,7 +22,7 @@ router = APIRouter(
 
 @router.get("")
 def search_ticks(db: DatabaseDep):
-    query = select(Tick).order_by(col(Tick.ticked_at).desc())
+    query = select(Tick).order_by(col(Tick.created_at).desc())
     return db.exec(query).all()
 
 
@@ -36,20 +36,20 @@ def get_tick(tick_id: int, db: DatabaseDep):
 def create_tick(db: DatabaseDep):
     try:
         ticked_at = db.exec(
-            select(Tick.ticked_at).order_by(col(Tick.ticked_at).desc()).limit(1)
+            select(Tick.created_at).order_by(col(Tick.created_at).desc()).limit(1)
         ).one()
     except NoResultFound:
-        ticked_at = datetime.utcnow() - timedelta(seconds=Tick.LENGTH)
+        ticked_at = datetime.now(UTC) - timedelta(seconds=Tick.LENGTH)
 
-    tick = Tick(ticked_at=ticked_at + timedelta(seconds=Tick.LENGTH))
+    tick = Tick(created_at=ticked_at + timedelta(seconds=Tick.LENGTH))
 
-    if tick.ticked_at > datetime.utcnow():
+    if tick.created_at > datetime.now(UTC):
         return JSONResponse(
             {"detail": f"Can only tick once every {Tick.LENGTH} seconds"},
             HTTPStatus.CONFLICT,
         )
 
-    buildings = db.exec(select(Building).where(Building.not_destroyed())).all()
+    buildings = db.exec(select(Building).where(Building.not_deleted)).all()
 
     for building in buildings:
         material_yields = db.exec(
@@ -72,9 +72,9 @@ def create_tick(db: DatabaseDep):
                     material_id=material_yield.material_id,
                     balance=0,
                 )
+                db.add(storage)
 
             storage.balance += material_yield.quantity
-            db.add(storage)
 
     db.add(tick)
     db.commit()

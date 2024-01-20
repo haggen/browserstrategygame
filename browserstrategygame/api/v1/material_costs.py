@@ -11,5 +11,5 @@ router = APIRouter(
 
 @router.get("")
 def search_material_costs(db: DatabaseDep):
-    query = select(MaterialCost).where(MaterialCost.not_deleted())
+    query = select(MaterialCost).where(MaterialCost.not_deleted)
     return db.exec(query).all()
