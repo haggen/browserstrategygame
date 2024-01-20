@@ -13,32 +13,31 @@ These are the main packages used to develop this application.
 - Ruff
 - FastAPI
 - SQLModel
+- SQLite
 
 ### Getting started
 
-Create a virtual environment and install dependencies:
+Install the dependencies. Poetry will create a virtual environment for us.
 
 ```shell
-python -m venv .venv
-poetry env use .venv/bin/python
 poetry install
 ```
 
-Then, install pre-commit hooks:
+If we're planning on making changes, we should also install pre-commit hooks.
 
 ```shell
 poetry run pre-commit install
 ```
 
-Finally, start the application:
+Finally, we start the application.
 
 ```shell
-poetry run python -m browserstrategygame.app
+poetry run python -m browserstrategygame
 ```
 
 ### Debugging
 
-Add a debug configuration to VSCode:
+Add a debug configuration to VSCode.
 
 ```json
 {
@@ -50,10 +49,10 @@ Add a debug configuration to VSCode:
 }
 ```
 
-Start the application with the debugger:
+Start the debugger.
 
 ```shell
-poetry run python -m debugpy --listen 5678 -m browserstrategygame.app
+poetry run python -m debugpy --listen 5678 -m browserstrategygame
 ```
 
 ## License
