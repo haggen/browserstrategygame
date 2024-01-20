@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from re import sub
 from typing import Annotated, ClassVar, Optional, TypeVar
 
@@ -6,12 +6,21 @@ from fastapi import Depends
 from pydantic import BaseModel
 from sqlalchemy import Engine
 from sqlalchemy.orm import declared_attr
-from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlmodel import Field, Relationship, Session, SQLModel, col, create_engine
 
 T = TypeVar("T", bound=BaseModel)
 
 
 class Model(SQLModel):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column_kwargs={"onupdate": lambda: datetime.now(UTC)},
+    )
+    deleted_at: Optional[datetime] = None
+
     @declared_attr
     def __tablename__(cls):
         """
@@ -22,11 +31,30 @@ class Model(SQLModel):
 
     def update(self, data: T):
         """
-        Update a model with data from a Pydantic model.
+        Update model fields.
         """
 
         for key, value in data.model_dump().items():
             setattr(self, key, value)
+
+    def delete(self):
+        """
+        Soft-delete the model.
+        """
+
+        self.update(deleted_at=datetime.now(UTC))
+
+    @hybrid_property
+    def not_deleted(self):
+        """
+        Check if the model is not deleted. Also works in queries.
+        e.g. query(Model).where(Model.not_deleted)
+        """
+
+        return col(self.deleted_at) == None  # noqa: E711
+
+    # Work around the issue of Pydantic trying to register it as a field.
+    not_deleted: ClassVar[not_deleted]  # type: ignore
 
 
 class Realm(Model, table=True):
@@ -34,21 +62,8 @@ class Realm(Model, table=True):
     A realm is a collection of players.
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow}
-    )
-    deleted_at: Optional[datetime] = None
     name: str
     players: list["Player"] = Relationship(back_populates="realm")
-
-    def delete(self):
-        self.deleted_at = datetime.utcnow()
-
-    @classmethod
-    def not_deleted(cls):
-        return cls.deleted_at == None  # noqa: E711
 
 
 class Player(Model, table=True):
@@ -56,24 +71,11 @@ class Player(Model, table=True):
     A player holds buildings and materials.
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow}
-    )
-    deleted_at: Optional[datetime] = None
     name: str
     buildings: list["Building"] = Relationship(back_populates="player")
     storage: list["Storage"] = Relationship(back_populates="player")
     realm_id: int = Field(foreign_key="realm.id")
     realm: "Realm" = Relationship(back_populates="players")
-
-    def delete(self):
-        self.deleted_at = datetime.utcnow()
-
-    @classmethod
-    def not_deleted(cls):
-        return cls.deleted_at == None  # noqa: E711
 
     def pay_stored_material(self, material_id: int, quantity: int):
         for storage in self.storage:
@@ -90,20 +92,7 @@ class Material(Model, table=True):
     A material is a resource that can be produced, stored, and used to build buildings.
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow}
-    )
-    deleted_at: Optional[datetime] = None
     name: str
-
-    def delete(self):
-        self.deleted_at = datetime.utcnow()
-
-    @classmethod
-    def not_deleted(cls):
-        return cls.deleted_at == None  # noqa: E711
 
 
 class Storage(Model, table=True):
@@ -123,12 +112,6 @@ class BuildingTemplate(Model, table=True):
     A building template is a blueprint for a building.
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow}
-    )
-    deleted_at: Optional[datetime] = None
     name: str
     buildings: "Building" = Relationship(back_populates="building_template")
     material_costs: list["MaterialCost"] = Relationship(
@@ -138,25 +121,12 @@ class BuildingTemplate(Model, table=True):
         back_populates="building_template"
     )
 
-    def delete(self):
-        self.deleted_at = datetime.utcnow()
-
-    @classmethod
-    def not_deleted(cls):
-        return cls.deleted_at == None  # noqa: E711
-
 
 class MaterialCost(Model, table=True):
     """
     How much of a material a building costs to build.
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow}
-    )
-    deleted_at: Optional[datetime] = None
     building_template_id: int = Field(foreign_key="building_template.id")
     building_template: "BuildingTemplate" = Relationship(
         back_populates="material_costs"
@@ -165,25 +135,12 @@ class MaterialCost(Model, table=True):
     material: "Material" = Relationship()
     quantity: int
 
-    def delete(self):
-        self.deleted_at = datetime.utcnow()
-
-    @classmethod
-    def not_deleted(cls):
-        return cls.deleted_at == None  # noqa: E711
-
 
 class MaterialYield(Model, table=True):
     """
     How much of a material a building produces.
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow}
-    )
-    deleted_at: Optional[datetime] = None
     building_template_id: int = Field(foreign_key="building_template.id")
     building_template: "BuildingTemplate" = Relationship(
         back_populates="material_yields"
@@ -192,33 +149,16 @@ class MaterialYield(Model, table=True):
     material: "Material" = Relationship()
     quantity: int
 
-    def delete(self):
-        self.deleted_at = datetime.utcnow()
-
-    @classmethod
-    def not_deleted(cls):
-        return cls.deleted_at == None  # noqa: E711
-
 
 class Building(Model, table=True):
     """
     A building is a player-owned resource generator.
     """
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    built_at: datetime = Field(default_factory=datetime.utcnow)
-    destroyed_at: Optional[datetime] = None
     building_template_id: int = Field(foreign_key="building_template.id")
     building_template: "BuildingTemplate" = Relationship(back_populates="buildings")
     player_id: int = Field(foreign_key="player.id")
     player: "Player" = Relationship(back_populates="buildings")
-
-    @classmethod
-    def not_destroyed(cls):
-        return cls.destroyed_at == None  # noqa: E711
-
-    def destroy(self):
-        self.destroyed_at = datetime.utcnow()
 
 
 class Tick(Model, table=True):
@@ -228,9 +168,6 @@ class Tick(Model, table=True):
 
     # Seconds between game ticks.
     LENGTH: ClassVar[int] = 60
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    ticked_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 # -
