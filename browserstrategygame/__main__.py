@@ -1,10 +1,6 @@
-from browserstrategygame import config, database
+from browserstrategygame import config
 
 import uvicorn
-
-database.connect(config.database_url)
-database.migrate()
-database.seed()
 
 uvicorn.run(
     "browserstrategygame.app:app",

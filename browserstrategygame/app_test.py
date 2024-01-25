@@ -2,13 +2,39 @@ from datetime import UTC, datetime
 
 from fastapi.testclient import TestClient
 from pytest import fixture
-from sqlmodel import Session
+from sqlalchemy import StaticPool
+from sqlmodel import SQLModel, Session, create_engine
 
-from . import app, database
+from browserstrategygame.app import app
+from browserstrategygame.database import (
+    yield_session,
+    Material,
+    Player,
+    Realm,
+    Storage,
+    BuildingTemplate,
+    MaterialCost,
+)
 
-client = TestClient(app.app)
+# I still don't quite understand why StaticPool is needed here.
+# Without it, it seems that each connection instances its own database.
+# I get "table doesn't exit" errors during the endpoint, even though tables were created here in the test script.
+engine = create_engine(
+    "sqlite://", poolclass=StaticPool, connect_args={"check_same_thread": False}
+)
+client = TestClient(app)
 
-database.connect("sqlite:///test.db")
+
+def override_yield_session():
+    """
+    Use test database.
+    """
+
+    with Session(engine) as session:
+        yield session
+
+
+app.dependency_overrides[yield_session] = override_yield_session
 
 
 @fixture(autouse=True)
@@ -17,19 +43,19 @@ def db():
     Recreate database and yield session for every test case.
     """
 
-    database.migrate()
+    SQLModel.metadata.create_all(engine)
 
-    with Session(database.engine) as session:
+    with Session(engine) as session:
         yield session
 
-    database.drop()
+    SQLModel.metadata.drop_all(engine)
 
 
 def test_search_materials(db):
-    stone = database.Material(name="Stone")
+    stone = Material(name="Stone")
     db.add(stone)
 
-    wood = database.Material(name="Wood", deleted_at=datetime.now(UTC))
+    wood = Material(name="Wood", deleted_at=datetime.now(UTC))
     db.add(wood)
 
     db.commit()
@@ -44,10 +70,10 @@ def test_search_materials(db):
 
 
 def test_get_material(db):
-    stone = database.Material(name="Stone")
+    stone = Material(name="Stone")
     db.add(stone)
 
-    wood = database.Material(name="Wood", deleted_at=datetime.now(UTC))
+    wood = Material(name="Wood", deleted_at=datetime.now(UTC))
     db.add(wood)
 
     db.commit()
@@ -63,23 +89,23 @@ def test_get_material(db):
 
 
 def test_create_building(db):
-    wood = database.Material(name="Wood")
+    wood = Material(name="Wood")
     db.add(wood)
     db.commit()
     db.refresh(wood)
 
-    player = database.Player(
+    player = Player(
         name="Player",
-        realm=database.Realm(name="Realm"),
-        storage=[database.Storage(material_id=wood.id, balance=100)],
+        realm=Realm(name="Realm"),
+        storage=[Storage(material_id=wood.id, balance=100)],
     )
     db.add(player)
     db.commit()
     db.refresh(player)
 
-    building_template = database.BuildingTemplate(
+    building_template = BuildingTemplate(
         name="Quarry",
-        material_costs=[database.MaterialCost(material_id=wood.id, quantity=75)],
+        material_costs=[MaterialCost(material_id=wood.id, quantity=75)],
     )
     db.add(building_template)
     db.commit()
