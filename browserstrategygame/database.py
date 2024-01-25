@@ -34,7 +34,7 @@ class ModelBase(SQLModel):
             setattr(self, key, value)
 
 
-class ModelId:
+class ModelId(SQLModel):
     """
     Id for primary key.
     """
@@ -42,7 +42,7 @@ class ModelId:
     id: Optional[int] = Field(default=None, primary_key=True)
 
 
-class ModelTimestamps:
+class ModelTimestamps(SQLModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
