@@ -12,14 +12,10 @@ from sqlmodel import Field, Relationship, Session, SQLModel, col, create_engine
 T = TypeVar("T", bound=BaseModel)
 
 
-class Model(SQLModel):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC),
-        sa_column_kwargs={"onupdate": lambda: datetime.now(UTC)},
-    )
-    deleted_at: Optional[datetime] = None
+class ModelBase(SQLModel):
+    """
+    Base our for database models.
+    """
 
     @declared_attr
     def __tablename__(cls):
@@ -36,6 +32,23 @@ class Model(SQLModel):
 
         for key, value in data.model_dump().items():
             setattr(self, key, value)
+
+
+class ModelId:
+    """
+    Id for primary key.
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+
+class ModelTimestamps:
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column_kwargs={"onupdate": lambda: datetime.now(UTC)},
+    )
+    deleted_at: Optional[datetime] = None
 
     def delete(self):
         """
@@ -57,7 +70,7 @@ class Model(SQLModel):
     not_deleted: ClassVar[not_deleted]  # type: ignore
 
 
-class Realm(Model, table=True):
+class Realm(ModelBase, ModelId, ModelTimestamps, table=True):
     """
     A realm is a collection of players.
     """
@@ -66,7 +79,7 @@ class Realm(Model, table=True):
     players: list["Player"] = Relationship(back_populates="realm")
 
 
-class Player(Model, table=True):
+class Player(ModelBase, ModelId, ModelTimestamps, table=True):
     """
     A player holds buildings and materials.
     """
@@ -87,7 +100,7 @@ class Player(Model, table=True):
         return False
 
 
-class Material(Model, table=True):
+class Material(ModelBase, ModelId, ModelTimestamps, table=True):
     """
     A material is a resource that can be produced, stored, and used to build buildings.
     """
@@ -95,7 +108,7 @@ class Material(Model, table=True):
     name: str
 
 
-class Storage(Model, table=True):
+class Storage(ModelBase, table=True):
     """
     How much of a material a player has.
     """
@@ -107,7 +120,7 @@ class Storage(Model, table=True):
     material: "Material" = Relationship()
 
 
-class BuildingTemplate(Model, table=True):
+class BuildingTemplate(ModelBase, ModelId, ModelTimestamps, table=True):
     """
     A building template is a blueprint for a building.
     """
@@ -122,7 +135,7 @@ class BuildingTemplate(Model, table=True):
     )
 
 
-class MaterialCost(Model, table=True):
+class MaterialCost(ModelBase, ModelId, ModelTimestamps, table=True):
     """
     How much of a material a building costs to build.
     """
@@ -136,7 +149,7 @@ class MaterialCost(Model, table=True):
     quantity: int
 
 
-class MaterialYield(Model, table=True):
+class MaterialYield(ModelBase, ModelId, ModelTimestamps, table=True):
     """
     How much of a material a building produces.
     """
@@ -150,7 +163,7 @@ class MaterialYield(Model, table=True):
     quantity: int
 
 
-class Building(Model, table=True):
+class Building(ModelBase, ModelId, ModelTimestamps, table=True):
     """
     A building is a player-owned resource generator.
     """
@@ -161,7 +174,7 @@ class Building(Model, table=True):
     player: "Player" = Relationship(back_populates="buildings")
 
 
-class Tick(Model, table=True):
+class Tick(ModelBase, ModelId, ModelTimestamps, table=True):
     """
     When the game ticks, buildings produce materials, effects are applied, etc.
     """
