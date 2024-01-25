@@ -2,6 +2,7 @@ from browserstrategygame import config, database
 
 import uvicorn
 
+database.connect(config.database_url)
 database.migrate()
 database.seed()
 
