@@ -4,10 +4,11 @@ from typing import Annotated, ClassVar, Optional, TypeVar
 
 from fastapi import Depends
 from pydantic import BaseModel
-from sqlalchemy import Engine
 from sqlalchemy.orm import declared_attr
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlmodel import Field, Relationship, Session, SQLModel, col, create_engine
+
+from browserstrategygame import config
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -187,16 +188,8 @@ class Tick(ModelBase, ModelId, ModelTimestamps, table=True):
 # -
 # -
 
-engine: Engine
 
-
-def connect(database_url: str):
-    """
-    Create database engine.
-    """
-
-    global engine
-    engine = create_engine(database_url, echo=True)
+engine = create_engine(config.database_url, echo=True)
 
 
 def migrate():
@@ -205,14 +198,6 @@ def migrate():
     """
 
     SQLModel.metadata.create_all(engine)
-
-
-def drop():
-    """
-    Drop all tables in the database.
-    """
-
-    SQLModel.metadata.drop_all(engine)
 
 
 def seed():
