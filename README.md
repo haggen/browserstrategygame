@@ -35,6 +35,20 @@ Finally, we start the application.
 poetry run python -m browserstrategygame
 ```
 
+### Test
+
+```shell
+poetry run pytest
+```
+
+### Test with coverage
+
+```shell
+ poetry run pytest -s -x --cov=browserstrategygame -vv
+```
+ See the coverage report at `htmlcov/index.html`.
+
+
 ### Debugging
 
 Add a debug configuration to VSCode.
