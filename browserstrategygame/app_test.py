@@ -50,6 +50,7 @@ def db():
 
     SQLModel.metadata.drop_all(engine)
 
+
 def test_search_realms(db):
     realm = Realm(name="Realm")
     db.add(realm)

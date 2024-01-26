@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from sqlmodel import select
 from pydantic import BaseModel
-from http import HTTPStatus
 from browserstrategygame.database import DatabaseDep, Realm
 
 router = APIRouter(

@@ -78,9 +78,7 @@ class Realm(ModelBase, ModelId, ModelTimestamps, table=True):
 
     name: str
     players: list["Player"] = Relationship(back_populates="realm")
-    building_templates: list["BuildingTemplate"] = Relationship(
-        back_populates="realm"
-    )
+    building_templates: list["BuildingTemplate"] = Relationship(back_populates="realm")
 
 
 class Player(ModelBase, ModelId, ModelTimestamps, table=True):
