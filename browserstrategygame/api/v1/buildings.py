@@ -9,7 +9,6 @@ from browserstrategygame.database import (
     BuildingTemplate,
     DatabaseDep,
     Player,
-    Storage,
 )
 
 router = APIRouter(
@@ -32,20 +31,21 @@ class BlankBuilding(BaseModel):
 @router.post("", status_code=HTTPStatus.CREATED)
 def create_building(data: BlankBuilding, db: DatabaseDep):
     building = Building.model_validate(data)
+    db.add(building)
     building_template = db.exec(
         select(BuildingTemplate).where(
             BuildingTemplate.not_deleted,
             BuildingTemplate.id == data.building_template_id,
         )
     ).one()
+    db.add(building_template)
     player = db.exec(
         select(Player).where(Player.not_deleted, Player.id == data.player_id)
     ).one()
-    db.exec(select(Storage).where(Storage.player_id == data.player_id)).all()
-    db.add(building)
-    for material_cost in building_template.material_costs:
-        if not player.pay_stored_material(
-            material_cost.material_id, material_cost.quantity
+    db.add(player)
+    for material_effect in building_template.material_effects:
+        if not player.transact(
+            material_id=material_effect.material_id, amount=material_effect.amount
         ):
             db.rollback()
             return Response(status_code=HTTPStatus.UNPROCESSABLE_ENTITY)

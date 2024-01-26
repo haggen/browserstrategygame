@@ -11,9 +11,8 @@ from browserstrategygame.database import (
     Material,
     Player,
     Realm,
-    Storage,
     BuildingTemplate,
-    MaterialCost,
+    MaterialEffect,
 )
 
 # I still don't quite understand why StaticPool is needed here.
@@ -97,15 +96,17 @@ def test_create_building(db):
     player = Player(
         name="Player",
         realm=Realm(name="Realm"),
-        storage=[Storage(material_id=wood.id, balance=100)],
     )
     db.add(player)
     db.commit()
     db.refresh(player)
 
+    player.transact(material_id=wood.id, amount=10)
+    db.commit()
+
     building_template = BuildingTemplate(
         name="Quarry",
-        material_costs=[MaterialCost(material_id=wood.id, quantity=75)],
+        material_effects=[MaterialEffect(event="build", material_id=wood.id, amount=7)],
     )
     db.add(building_template)
     db.commit()
