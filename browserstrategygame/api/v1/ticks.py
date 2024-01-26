@@ -9,8 +9,6 @@ from sqlmodel import col, select
 from browserstrategygame.database import (
     Building,
     DatabaseDep,
-    MaterialYield,
-    Storage,
     Tick,
 )
 
@@ -52,29 +50,7 @@ def create_tick(db: DatabaseDep):
     buildings = db.exec(select(Building).where(Building.not_deleted)).all()
 
     for building in buildings:
-        material_yields = db.exec(
-            select(MaterialYield).where(
-                MaterialYield.building_template_id == building.building_template_id
-            )
-        ).all()
-
-        for material_yield in material_yields:
-            try:
-                storage = db.exec(
-                    select(Storage).where(
-                        Storage.player_id == building.player_id,
-                        Storage.material_id == material_yield.material_id,
-                    )
-                ).one()
-            except NoResultFound:
-                storage = Storage(
-                    player_id=building.player_id,
-                    material_id=material_yield.material_id,
-                    balance=0,
-                )
-                db.add(storage)
-
-            storage.balance += material_yield.quantity
+        building.tick(tick.created_at)
 
     db.add(tick)
     db.commit()

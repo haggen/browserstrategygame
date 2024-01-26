@@ -6,7 +6,7 @@ from fastapi import Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import declared_attr
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlmodel import Field, Relationship, Session, SQLModel, col, create_engine
+from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
 
 from browserstrategygame import config
 
@@ -65,7 +65,7 @@ class ModelTimestamps(SQLModel):
         e.g. query(Model).where(Model.not_deleted)
         """
 
-        return col(self.deleted_at) == None  # noqa: E711
+        return self.deleted_at == None  # noqa: E711
 
     # Work around the issue of Pydantic trying to register it as a field.
     not_deleted: ClassVar[not_deleted]  # type: ignore
@@ -87,18 +87,22 @@ class Player(ModelBase, ModelId, ModelTimestamps, table=True):
 
     name: str
     buildings: list["Building"] = Relationship(back_populates="player")
-    storage: list["Storage"] = Relationship(back_populates="player")
+    transactions: list["MaterialTransaction"] = Relationship(back_populates="player")
     realm_id: int = Field(foreign_key="realm.id")
     realm: "Realm" = Relationship(back_populates="players")
 
-    def pay_stored_material(self, material_id: int, quantity: int):
-        for storage in self.storage:
-            if storage.material_id == material_id:
-                if storage.balance >= quantity:
-                    storage.balance -= quantity
-                    return True
+    def transact(self, material_id: int, amount: int):
+        """
+        Transact material to/from the player.
+        """
 
-        return False
+        # TODO: when amount is negative check if the player has enough materials.
+
+        self.transactions.append(
+            MaterialTransaction(
+                player_id=self.id, material_id=material_id, amount=amount
+            )
+        )
 
 
 class Material(ModelBase, ModelId, ModelTimestamps, table=True):
@@ -109,59 +113,47 @@ class Material(ModelBase, ModelId, ModelTimestamps, table=True):
     name: str
 
 
-class Storage(ModelBase, table=True):
+class MaterialTransaction(ModelBase, ModelId, ModelTimestamps, table=True):
     """
-    How much of a material a player has.
+    Transaction of materials.
     """
 
-    player_id: int = Field(default=None, foreign_key="player.id", primary_key=True)
-    material_id: int = Field(default=None, foreign_key="material.id", primary_key=True)
-    balance: int = 0
-    player: "Player" = Relationship(back_populates="storage")
+    player_id: int = Field(default=None, foreign_key="player.id")
+    player: "Player" = Relationship(back_populates="transactions")
+    material_id: int = Field(default=None, foreign_key="material.id")
     material: "Material" = Relationship()
+    amount: int = 0
 
 
 class BuildingTemplate(ModelBase, ModelId, ModelTimestamps, table=True):
     """
     A building template is a blueprint for a building.
+    It defines the building's name and which material effects it has.
     """
 
     name: str
     buildings: "Building" = Relationship(back_populates="building_template")
-    material_costs: list["MaterialCost"] = Relationship(
+    material_effects: list["MaterialEffect"] = Relationship(
         back_populates="building_template",
     )
-    material_yields: list["MaterialYield"] = Relationship(
-        back_populates="building_template"
-    )
 
 
-class MaterialCost(ModelBase, ModelId, ModelTimestamps, table=True):
+class MaterialEffect(ModelBase, ModelId, ModelTimestamps, table=True):
     """
-    How much of a material a building costs to build.
-    """
+    Event based material effects caused by buildings.
 
-    building_template_id: int = Field(foreign_key="building_template.id")
-    building_template: "BuildingTemplate" = Relationship(
-        back_populates="material_costs"
-    )
-    material_id: int = Field(foreign_key="material.id")
-    material: "Material" = Relationship()
-    quantity: int
-
-
-class MaterialYield(ModelBase, ModelId, ModelTimestamps, table=True):
-    """
-    How much of a material a building produces.
+    For instance, a building will have negative material effects when it's built (building cost),
+    but will also have a positive material effect when it ticks (material production).
     """
 
     building_template_id: int = Field(foreign_key="building_template.id")
     building_template: "BuildingTemplate" = Relationship(
-        back_populates="material_yields"
+        back_populates="material_effects"
     )
     material_id: int = Field(foreign_key="material.id")
     material: "Material" = Relationship()
-    quantity: int
+    event: str  # TODO: should be enum.
+    amount: int
 
 
 class Building(ModelBase, ModelId, ModelTimestamps, table=True):
@@ -173,6 +165,17 @@ class Building(ModelBase, ModelId, ModelTimestamps, table=True):
     building_template: "BuildingTemplate" = Relationship(back_populates="buildings")
     player_id: int = Field(foreign_key="player.id")
     player: "Player" = Relationship(back_populates="buildings")
+
+    def tick(self, ticked_at: datetime):
+        """
+        Apply material effects on tick.
+        """
+
+        for material_effect in self.building_template.material_effects:
+            if material_effect.not_deleted and material_effect.event == "tick":
+                self.player.transact(
+                    material_effect.material_id, material_effect.amount
+                )
 
 
 class Tick(ModelBase, ModelId, ModelTimestamps, table=True):
@@ -218,19 +221,31 @@ def seed():
         iron = Material(name="Iron")
         db.add(iron)
 
-        quarry = BuildingTemplate(name="Stone Quarry")
+        quarry = BuildingTemplate(
+            name="Stone Quarry",
+            material_effects=[
+                MaterialEffect(material=stone, event="tick", amount=1),
+            ],
+        )
         db.add(quarry)
-        lumberyard = BuildingTemplate(name="Lumberyard")
+
+        lumberyard = BuildingTemplate(
+            name="Lumberyard",
+            material_effects=[
+                MaterialEffect(material=wood, event="tick", amount=1),
+            ],
+        )
         db.add(lumberyard)
-        iron_mine = BuildingTemplate(name="Iron Mine")
+
+        iron_mine = BuildingTemplate(
+            name="Iron Mine",
+            material_effects=[
+                MaterialEffect(material=stone, event="build", amount=-10),
+                MaterialEffect(material=wood, event="build", amount=-10),
+                MaterialEffect(material=iron, event="tick", amount=1),
+            ],
+        )
         db.add(iron_mine)
-
-        db.add(MaterialCost(building_template=iron_mine, material=stone, quantity=100))
-        db.add(MaterialCost(building_template=iron_mine, material=wood, quantity=100))
-
-        db.add(MaterialYield(building_template=quarry, material=stone, quantity=100))
-        db.add(MaterialYield(building_template=lumberyard, material=wood, quantity=100))
-        db.add(MaterialYield(building_template=iron_mine, material=iron, quantity=100))
 
         db.commit()
 
