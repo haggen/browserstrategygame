@@ -51,6 +51,26 @@ def db():
     SQLModel.metadata.drop_all(engine)
 
 
+def test_search_realms(db):
+    realm = Realm(name="Realm")
+    db.add(realm)
+    db.commit()
+    db.refresh(realm)
+    response = client.get("/v1/realms")
+    assert response.status_code == 200
+    assert any(server["name"] == realm.name for server in response.json())
+
+
+def test_get_realm(db):
+    realm = Realm(name="Realm")
+    db.add(realm)
+    db.commit()
+    db.refresh(realm)
+    response = client.get(f"/v1/realms/{realm.id}")
+    assert response.status_code == 200
+    assert response.json() == realm.model_dump(mode="json")
+
+
 def test_search_materials(db):
     stone = Material(name="Stone")
     db.add(stone)
@@ -105,6 +125,7 @@ def test_create_building(db):
 
     building_template = BuildingTemplate(
         name="Quarry",
+        realm_id=player.realm.id,
         material_costs=[MaterialCost(material_id=wood.id, quantity=75)],
     )
     db.add(building_template)
