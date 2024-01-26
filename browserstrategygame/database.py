@@ -214,7 +214,8 @@ def seed():
         if db.get(Material, 1):
             return
 
-        db.add(Realm(name="Realm - Cyber World"))
+        realm = Realm(name="Realm - Cyber World")
+        db.add(realm)
 
         stone = Material(name="Stone")
         db.add(stone)
@@ -223,11 +224,11 @@ def seed():
         iron = Material(name="Iron")
         db.add(iron)
 
-        quarry = BuildingTemplate(name="Stone Quarry", realm_id=1)
+        quarry = BuildingTemplate(name="Stone Quarry", realm=realm)
         db.add(quarry)
-        lumberyard = BuildingTemplate(name="Lumberyard", realm_id=1)
+        lumberyard = BuildingTemplate(name="Lumberyard", realm=realm)
         db.add(lumberyard)
-        iron_mine = BuildingTemplate(name="Iron Mine", realm_id=1)
+        iron_mine = BuildingTemplate(name="Iron Mine", realm=realm)
         db.add(iron_mine)
 
         db.add(MaterialCost(building_template=iron_mine, material=stone, quantity=100))
