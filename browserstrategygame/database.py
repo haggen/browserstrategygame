@@ -78,6 +78,9 @@ class Realm(ModelBase, ModelId, ModelTimestamps, table=True):
 
     name: str
     players: list["Player"] = Relationship(back_populates="realm")
+    building_templates: list["BuildingTemplate"] = Relationship(
+        back_populates="realm"
+    )
 
 
 class Player(ModelBase, ModelId, ModelTimestamps, table=True):
@@ -134,6 +137,8 @@ class BuildingTemplate(ModelBase, ModelId, ModelTimestamps, table=True):
     material_yields: list["MaterialYield"] = Relationship(
         back_populates="building_template"
     )
+    realm_id: int = Field(foreign_key="realm.id")
+    realm: "Realm" = Relationship(back_populates="building_templates")
 
 
 class MaterialCost(ModelBase, ModelId, ModelTimestamps, table=True):
@@ -209,7 +214,7 @@ def seed():
         if db.get(Material, 1):
             return
 
-        db.add(Realm(name="Kingdom of Death"))
+        db.add(Realm(name="Realm - Cyber World"))
 
         stone = Material(name="Stone")
         db.add(stone)
@@ -218,11 +223,11 @@ def seed():
         iron = Material(name="Iron")
         db.add(iron)
 
-        quarry = BuildingTemplate(name="Stone Quarry")
+        quarry = BuildingTemplate(name="Stone Quarry", realm_id=1)
         db.add(quarry)
-        lumberyard = BuildingTemplate(name="Lumberyard")
+        lumberyard = BuildingTemplate(name="Lumberyard", realm_id=1)
         db.add(lumberyard)
-        iron_mine = BuildingTemplate(name="Iron Mine")
+        iron_mine = BuildingTemplate(name="Iron Mine", realm_id=1)
         db.add(iron_mine)
 
         db.add(MaterialCost(building_template=iron_mine, material=stone, quantity=100))
