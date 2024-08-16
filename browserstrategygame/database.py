@@ -4,13 +4,18 @@ from typing import Annotated, ClassVar, Optional, TypeVar
 
 from fastapi import Depends
 from pydantic import BaseModel
-from sqlalchemy.orm import declared_attr
+from sqlalchemy import (
+    text,
+)
+from sqlalchemy.orm import declared_attr, declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
 
 from browserstrategygame import config
 
 T = TypeVar("T", bound=BaseModel)
+
+SAModel = declarative_base(metadata=SQLModel.metadata)
 
 
 class ModelBase(SQLModel):
@@ -88,6 +93,7 @@ class Player(ModelBase, ModelId, ModelTimestamps, table=True):
     name: str
     buildings: list["Building"] = Relationship(back_populates="player")
     transactions: list["MaterialTransaction"] = Relationship(back_populates="player")
+    material_inventory: list["MaterialInventory"] = Relationship()
     realm_id: int = Field(foreign_key="realm.id")
     realm: "Realm" = Relationship(back_populates="players")
 
@@ -103,6 +109,7 @@ class Player(ModelBase, ModelId, ModelTimestamps, table=True):
                 player_id=self.id, material_id=material_id, amount=amount
             )
         )
+        return True
 
 
 class Material(ModelBase, ModelId, ModelTimestamps, table=True):
@@ -123,6 +130,37 @@ class MaterialTransaction(ModelBase, ModelId, ModelTimestamps, table=True):
     material_id: int = Field(default=None, foreign_key="material.id")
     material: "Material" = Relationship()
     amount: int = 0
+
+
+class MaterialInventory(ModelBase, table=True):
+    """
+    Inventory of materials of each player.
+    """
+
+    player_id: int = Field(default=None, foreign_key="player.id", primary_key=True)
+    material_id: int = Field(default=None, foreign_key="material.id", primary_key=True)
+    total: int = 0
+
+    @staticmethod
+    def create(db: Session):
+        """
+        Create the material balance view.
+        """
+
+        # db.exec(text("DROP TABLE material_balance;"))
+        db.exec(
+            text(
+                """
+                CREATE VIEW material_balance AS
+                SELECT
+                    player_id,
+                    material_id,
+                    SUM(amount) AS total
+                FROM material_transaction
+                GROUP BY player_id, material_id;
+                """
+            )
+        )
 
 
 class BuildingTemplate(ModelBase, ModelId, ModelTimestamps, table=True):
@@ -201,6 +239,9 @@ def migrate():
     """
 
     SQLModel.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        MaterialInventory.create(session)
 
 
 def seed():

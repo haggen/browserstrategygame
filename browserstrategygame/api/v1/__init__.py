@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from . import (
     building_templates,
     buildings,
+    inventory,
     material_effects,
     materials,
     players,
@@ -21,5 +22,6 @@ router.include_router(material_effects.router)
 router.include_router(materials.router)
 router.include_router(players.router)
 router.include_router(transactions.router)
+router.include_router(inventory.router)
 router.include_router(ticks.router)
 router.include_router(realms.router)
